@@ -1,10 +1,12 @@
 package ru.tictactoe.web.mapper;
 
+import org.springframework.stereotype.Component;
 import ru.tictactoe.domain.model.Board;
 import ru.tictactoe.domain.model.Game;
 import ru.tictactoe.web.model.BoardDto;
 import ru.tictactoe.web.model.GameDto;
 
+@Component
 public class WebMapper {
     public GameDto toDTO(Game game) {
         if (game == null) {
