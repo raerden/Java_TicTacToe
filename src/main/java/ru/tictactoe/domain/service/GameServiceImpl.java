@@ -1,6 +1,10 @@
 package ru.tictactoe.domain.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.tictactoe.datasource.mapper.GameDataMapper;
+import ru.tictactoe.datasource.model.GameData;
+import ru.tictactoe.datasource.repository.GameRepository;
 import ru.tictactoe.domain.model.Board;
 import ru.tictactoe.domain.model.Game;
 import ru.tictactoe.domain.exception.GameNotFoundException;
@@ -8,12 +12,17 @@ import ru.tictactoe.domain.model.Move;
 import ru.tictactoe.domain.model.ZeroCross;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class GameServiceImpl implements GameService {
+    private final GameRepository gameRepository;
+    private final GameDataMapper gameDataMapper;  // для конвертации
 
-    private final ConcurrentHashMap<UUID, Game> games = new ConcurrentHashMap<>();
+    @Autowired
+    public GameServiceImpl(GameRepository gameRepository, GameDataMapper gameDataMapper) {
+        this.gameRepository = gameRepository;
+        this.gameDataMapper = gameDataMapper;
+    }
 
     public Game createGame() {
         // Новая игра: пустая доска, ход игрока (1), нет победителя, игра не окончена
@@ -25,16 +34,20 @@ public class GameServiceImpl implements GameService {
                 false   // gameOver = false
         );
 
-        games.put(game.getId(), game);
+        GameData gameData = gameDataMapper.toData(game);
+        gameRepository.save(gameData);
+
         return game;
     }
 
     public Game getGame(UUID id) {
-        Game game = games.get(id);
-        if (game == null) {
+        // Загружаем через репозиторий
+        GameData gameData = gameRepository.load(id);
+        if (gameData == null) {
             throw new GameNotFoundException(id);
         }
-        return game;
+        // Конвертируем обратно в доменную модель
+        return gameDataMapper.toDomain(gameData);
     }
 
     public Move makeMove(Game game) {

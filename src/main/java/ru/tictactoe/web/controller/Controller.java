@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import ru.tictactoe.datasource.model.GameData;
+import ru.tictactoe.datasource.repository.GameRepository;
 import ru.tictactoe.domain.model.Game;
 import ru.tictactoe.domain.model.Move;
 import ru.tictactoe.domain.service.GameServiceImpl;
@@ -15,11 +17,14 @@ import java.util.UUID;
 
 @RestController // Аннотация говорит Spring, что этот класс будет обрабатывать HTTP запросы и возвращать данные (не HTML страницы)
 public class Controller {
+    private final GameRepository gameRepository;
     private final GameServiceImpl gameService;
     private final WebMapper webMapper;
 
+
     @Autowired
-    public Controller(GameServiceImpl gameService, WebMapper webMapper) {
+    public Controller(GameRepository gameRepository, GameServiceImpl gameService, WebMapper webMapper) {
+        this.gameRepository = gameRepository;
         this.gameService = gameService;
         this.webMapper = webMapper;
     }
@@ -41,6 +46,7 @@ public class Controller {
                     "Game ID in path and body must be the same"
             );
         }
+
 
         Game currentGame = webMapper.toDomain(gameDto);
         Move move = gameService.makeMove(currentGame);
