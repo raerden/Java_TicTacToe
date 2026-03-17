@@ -5,7 +5,6 @@ import ru.tictactoe.datasource.model.GameData;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Repository  // Аннотация, чтобы Spring управлял этим компонентом
 public class GameRepositoryImpl implements GameRepository {
 
     private final ConcurrentHashMap<UUID, GameData> games = new ConcurrentHashMap<>();

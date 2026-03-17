@@ -13,12 +13,10 @@ import ru.tictactoe.domain.model.ZeroCross;
 
 import java.util.UUID;
 
-@Service
 public class GameServiceImpl implements GameService {
     private final GameRepository gameRepository;
     private final GameDataMapper gameDataMapper;  // для конвертации
 
-    @Autowired
     public GameServiceImpl(GameRepository gameRepository, GameDataMapper gameDataMapper) {
         this.gameRepository = gameRepository;
         this.gameDataMapper = gameDataMapper;

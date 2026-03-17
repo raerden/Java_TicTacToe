@@ -6,7 +6,6 @@ import ru.tictactoe.domain.model.Game;
 import ru.tictactoe.web.model.BoardDto;
 import ru.tictactoe.web.model.GameDto;
 
-@Component
 public class WebMapper {
     public GameDto toDTO(Game game) {
         if (game == null) {

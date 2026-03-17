@@ -6,7 +6,6 @@ import ru.tictactoe.domain.model.Game;
 import ru.tictactoe.datasource.model.BoardData;
 import ru.tictactoe.datasource.model.GameData;
 
-@Component
 public class GameDataMapper {
 
     public GameData toData(Game game) {
