@@ -8,5 +8,6 @@ import java.util.UUID;
 public interface GameService {
     Game createGame();
     Game getGame(UUID id);
-    Move makeMove(Game game);
+    Game makeMove(Game game);
+    boolean validateGameState(UUID gameId, Game proposedGame);
 }
