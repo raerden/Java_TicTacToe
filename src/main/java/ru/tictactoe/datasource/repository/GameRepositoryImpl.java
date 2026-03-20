@@ -1,6 +1,5 @@
 package ru.tictactoe.datasource.repository;
 
-import org.springframework.stereotype.Repository;
 import ru.tictactoe.datasource.model.GameData;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

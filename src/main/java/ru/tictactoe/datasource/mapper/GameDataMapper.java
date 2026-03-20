@@ -1,6 +1,5 @@
 package ru.tictactoe.datasource.mapper;
 
-import org.springframework.stereotype.Component;
 import ru.tictactoe.domain.model.Board;
 import ru.tictactoe.domain.model.Game;
 import ru.tictactoe.datasource.model.BoardData;

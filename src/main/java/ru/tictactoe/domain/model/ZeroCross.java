@@ -1,8 +1,9 @@
 package ru.tictactoe.domain.model;
 
 public enum ZeroCross {
-    ZERO(1),
-    CROSS(2);
+    EMPTY(0),
+    CROSS(1),
+    ZERO(2);
 
     private int value;
 

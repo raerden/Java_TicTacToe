@@ -1,12 +1,9 @@
 package ru.tictactoe.domain.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import ru.tictactoe.datasource.mapper.GameDataMapper;
 import ru.tictactoe.datasource.model.GameData;
 import ru.tictactoe.datasource.repository.GameRepository;
+import ru.tictactoe.domain.exception.ValidateGameException;
 import ru.tictactoe.domain.model.Board;
 import ru.tictactoe.domain.model.Game;
 import ru.tictactoe.domain.exception.GameNotFoundException;
@@ -58,6 +55,11 @@ public class GameServiceImpl implements GameService {
         //Загружаем сохраненную иргу
         Game savedGame = getGame(gameId);
 
+        //Проверить что игра не завершена
+        if(savedGame.isGameOver()) {
+            throw new ValidateGameException("Игра " + gameId + " завершена!");
+        }
+
         // Сравниваем доски игры
         int[][] savedMatrix = savedGame.getBoard().getMatrix();
         int[][] proposedMatrix = proposedGame.getBoard().getMatrix();
@@ -76,81 +78,76 @@ public class GameServiceImpl implements GameService {
             }
         }
 
+        if (changes == 0) {
+            throw new ValidateGameException("Игрок не сделал ход!");
+        }
+
         // Должна измениться ровно одна клетка (ход игрока)
         if (changes != 1) {
-            System.out.println("Изменены более одной клетки");
-            return false;
+            throw new ValidateGameException("Изменены более одной клетки!");
         }
 
         // Измененная клетка была пустой
         if (savedMatrix[changedRow][changedCol] != 0) {
-            System.out.println("Измененнная клетка не была пустой");
-            return false;
+            throw new ValidateGameException("Данная клетка занята!");
         }
 
         // Игрок поставил крестик (1)
         if (proposedMatrix[changedRow][changedCol] != 1) {
-            System.out.println("Игрок поставил не 1 (крестик)");
-            return false;
+            throw new ValidateGameException("Игрок прислал не 1 (крестик)!");
         }
 
         return true;
     }
 
-    private void printBoard(Game game) {
-        int[][] matrix = game.getBoard().getMatrix();
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                System.out.printf("%d ", matrix[i][j]);
-            }
-            System.out.println();
-        }
-    }
-
     /**
-     * Основной метод, который делает ход за текущего игрока
+     * Основной метод, который делает ход за компьютер(2)
      */
     @Override
-    public Game makeMove(Game game) {
-        // 1. Проверяем, что игра не окончена
+    public Game makeComputerMove(Game game) {
         if (game.isGameOver()) {
             throw new IllegalStateException("Game is already over");
         }
 
-        // 2. Получаем текущего игрока
-        int currentPlayer = game.getCurrentPlayer();
-
-        System.out.println("Получили доску");
-        printBoard(game);
-
-        // 3. Находим лучший ход с помощью минимакса
-        Move bestMove = findBestMove(game, currentPlayer);
-
-        // 4. Применяем ход
-        if (bestMove != null) {
-            game.setMove(bestMove);
-        }
-
-        System.out.println("Сгенерили лучший ход");
-        printBoard(game);
-
-        // 5. Проверяем победу
+        // Проверяем победу игрока приславшего поле со своим ходом
         int winner = checkWinner(game.getBoard().getMatrix());
         if (winner != EMPTY) {
             game.setGameOver(true);
             game.setWinner(winner);
+            gameRepository.save(gameDataMapper.toData(game));
             return game;
         }
 
-        // 6. Проверяем ничью (все клетки заполнены)
+        // Получаем текущего игрока, кто прислал ход, и меняем на противоположного.
+        int currentPlayer = game.getCurrentPlayer() == PLAYER ? COMPUTER : PLAYER;
+
+
+        // Находим лучший ход для компа с помощью минимакса
+        Move bestMove = findBestMove(game, currentPlayer);
+
+        if (bestMove != null) {
+            game.setMove(bestMove);
+        }
+
+        // Проверяем победу
+        winner = checkWinner(game.getBoard().getMatrix());
+        if (winner != EMPTY) {
+            game.setGameOver(true);
+            game.setWinner(winner);
+            gameRepository.save(gameDataMapper.toData(game));
+            return game;
+        }
+
+        // Проверяем ничью (все клетки заполнены)
         if (isBoardFull(game.getBoard().getMatrix())) {
             game.setGameOver(true);
             game.setWinner(0); // ничья
+            gameRepository.save(gameDataMapper.toData(game));
             return game;
         }
 
-        // 7. Если игра не закончена, меняем игрока
-        game.setCurrentPlayer(currentPlayer == PLAYER ? COMPUTER : PLAYER);
+        // Если игра не закончена, меняем игрока. Кто сделал текущий ход
+        game.setCurrentPlayer(currentPlayer);
 
         // Сохраняем новое состояние игры
         gameRepository.save(gameDataMapper.toData(game));
@@ -158,52 +155,31 @@ public class GameServiceImpl implements GameService {
         return game;
     }
 
-    /**
-     * Находит лучший ход для указанного игрока
-     */
     private Move findBestMove(Game game, int player) {
         int[][] board = game.getBoard().getMatrix();
-        int bestScore;
+        int bestScore = Integer.MIN_VALUE;
         Move bestMove = null;
 
-        // Инициализируем bestScore в зависимости от игрока
-        if (player == PLAYER) {
-            bestScore = Integer.MIN_VALUE;  // игрок ищет максимум
-        } else {
-            bestScore = Integer.MIN_VALUE;  // КОМПЬЮТЕР ТОЖЕ ИЩЕТ МАКСИМУМ!
-        }
-
-        // Перебираем все пустые клетки
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (board[i][j] == EMPTY) {
-                    // Делаем пробный ход
                     board[i][j] = player;
 
                     if (checkWinner(board) == player) {
-                        System.out.println("Найден выигрышный ход (" + i + "," + j + ")!");
                         board[i][j] = EMPTY;  // отменяем ход перед возвратом
                         return new Move(i, j, player == PLAYER ? ZeroCross.CROSS : ZeroCross.ZERO);
                     }
 
-                    // Рекурсивно оцениваем результат
-                    // Передаем следующего игрока
+                    // Передаем в минимакс противоположного игрока
                     int nextPlayer = (player == PLAYER) ? COMPUTER : PLAYER;
                     int score = minimax(board, 0, nextPlayer);
 
-                    System.out.println("Оценка хода (" + i + "," + j + "): " + score);
-
-                    // Отменяем пробный ход
                     board[i][j] = EMPTY;
 
-                    // ОБА игрока ищут МАКСИМУМ
                     if (score > bestScore) {
                         bestScore = score;
-                        if (player == PLAYER) {
-                            bestMove = new Move(i, j, ZeroCross.CROSS);
-                        } else {
-                            bestMove = new Move(i, j, ZeroCross.ZERO);
-                        }
+                        bestMove = new Move(i, j,
+                                player ==  PLAYER ? ZeroCross.CROSS : ZeroCross.ZERO);
                     }
                 }
             }
@@ -212,9 +188,6 @@ public class GameServiceImpl implements GameService {
         return bestMove;
     }
 
-    /**
-     * Рекурсивный минимакс
-     */
     private int minimax(int[][] board, int depth, int player) {
         // Проверяем терминальные состояния
         int winner = checkWinner(board);
@@ -254,9 +227,6 @@ public class GameServiceImpl implements GameService {
         }
     }
 
-    /**
-     * Проверяет победителя
-     */
     private int checkWinner(int[][] board) {
         // Проверка строк
         for (int i = 0; i < 3; i++) {
@@ -283,9 +253,6 @@ public class GameServiceImpl implements GameService {
         return EMPTY; // нет победителя
     }
 
-    /**
-     * Проверяет, заполнена ли доска
-     */
     private boolean isBoardFull(int[][] board) {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {

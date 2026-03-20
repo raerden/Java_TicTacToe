@@ -3,7 +3,6 @@ package ru.tictactoe.web.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import ru.tictactoe.datasource.repository.GameRepository;
 import ru.tictactoe.domain.model.Game;
 import ru.tictactoe.domain.service.GameService;
 import ru.tictactoe.web.mapper.WebMapper;
@@ -45,7 +44,7 @@ public class Controller {
         }
 
         // Делаем ход компьютера (и проверяем победу)
-        Game updatedGame = gameService.makeMove(proposedGame);
+        Game updatedGame = gameService.makeComputerMove(proposedGame);
 
         // Возвращаем клиенту через мапперDTO
         return webMapper.toDTO(updatedGame);
